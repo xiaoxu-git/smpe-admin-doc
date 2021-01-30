@@ -13,14 +13,14 @@ module.exports = {
             { text: '项目指南', link: '/guide/' },
             { text: '常见问题', link: '/question/' },
             { text: '更新日志', link: '/note/' },
-            { text: '作者博客', link: 'https://blog.csdn.net/qq_42937522' },
+            // { text: '作者博客', link: 'https://blog.csdn.net/qq_42937522' },
 
             {
                 text: 'GitHub', link: '', items: [
                     {
                         text: '地址', items: [
-                            { text: '后端源码', link: 'https://github.com/shiwei-Ren/smpe-admin' },
-                            { text: '前端源码', link: 'https://github.com/shiwei-Ren/smpe-admin-web' },
+                            { text: '后端源码', link: 'https://github.com/sanyueruanjian/smpe-admin' },
+                            { text: '前端源码', link: 'https://github.com/sanyueruanjian/smpe-admin-web' },
                         ]
                     },
                 ]
@@ -38,20 +38,9 @@ module.exports = {
                         ['', '项目介绍'],      /* /guide/ */
                         ['fastKnow', '快速了解'], /* /guide/fastIn.html */
                         ['fastStart', '快速开始'], /* /guide/fastIn.html */
-                        // ['projectIntroduce', '项目介绍'],
                         ['frontHandbook', '前端手册'],
                         ['behindHandbook', '后端手册'],
-                    ],
-                    initialOpenGroupIndex: 0
-                },
-                {
-                    title: '其他',   // 必要的
-                    // path: '/guide/',      // 可选的, 标题的跳转链接，应为绝对路径且必须存在
-                    collapsable: false, // 可选的, 默认值是 true,
-                    sidebarDepth: 0,    // 可选的, 默认值是 1
-                    children: [
-                        ['projectFromThis', '孵化项目'],      /* /guide/thanks */
-
+                        ['deployProject','部署项目']
                     ],
                     initialOpenGroupIndex: 0
                 },
@@ -84,15 +73,15 @@ module.exports = {
         // 以下为可选的编辑链接选项
 
         // 假如你的文档仓库和项目本身不在一个仓库：
-        docsRepo: 'shiwei-Ren/smpe-admin',
+        // docsRepo: 'shiwei-Ren/smpe-admin-doc',
         // 假如文档不是放在仓库的根目录下：
-        docsDir: 'docs',
+        // docsDir: 'docs',
         // 假如文档放在一个特定的分支下：
-        docsBranch: 'master',
+        // docsBranch: 'gh-pages',
         // 默认是 false, 设置为 true 来启用
-        editLinks: true,
+        // editLinks: true,
         // 默认为 "Edit this page"
-        editLinkText: '帮助我们改善此页面！',
+        // editLinkText: '帮助我们改善此页面！',
 
         // algolia: {
         //     apiKey: '<API_KEY>',

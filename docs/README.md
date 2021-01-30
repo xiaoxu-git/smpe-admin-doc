@@ -1,13 +1,13 @@
 ---
 home: true
-heroImage: ../img/logo.png
+# heroImage: 'docs/.vuepress/public/img/logo.png'
 heroText: SMPE
 tagline: 一个简单且易上手的 Spring boot 后台管理框架
 actionText: 快速上手 →
 actionLink: /guide/
 features:
 - title: 技术栈
-  details: 使用 SpringBoot、Jwt、Security、Redis、Vue 等前后端前沿技术开发
+  details: 使用 SpringBoot、Jwt、Security、Mybatis-plus、Redis、Vue 等前后端前沿技术开发
 - title: 模块化
   details: 后端采用按功能分模块开发方式，提升开发，测试效率
 - title: 高效率
@@ -18,5 +18,5 @@ features:
   details: 支持电脑、平板、手机等所有主流设备访问。
 - title: 易用性
   details: 几乎可用于所有Web项目的开发，如 OA、Cms，网址后台管理等。
-footer: MIT Licensed | Copyright © 2018-present Evan You
+# footer: MIT Licensed | Copyright © 2018-present Evan You
 ---

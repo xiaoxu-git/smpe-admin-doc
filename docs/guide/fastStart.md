@@ -1,24 +1,20 @@
-## 所需环境
-
-```xml
-1.JDK 1.8+ 黑窗口检查版本：java -version
-
-2.MySQL 5.5.0+ 黑窗口检查版本：Mysql -V
-
-3.Redis 3.0+ 黑窗口检查版本：redis-cli -v
-
-4.Maven 3.0+ 黑窗口检查版本：mvn -version
-
-5.Node v10+ 黑窗口检查版本：node -v
-
-6.Vue-cli 3.0+ 黑窗口检查版本：vue -V
-
-安装请参考：https://cli.vuejs.org/zh/guide/    
-```
-
 ## 开发准备
 
- 在使用该系统前，你还需要做如下准备
+### 所需环境
+1.JDK 1.8+
+
+2.MySQL 5.5.0+
+
+3.Redis 3.0+
+
+4.Maven 3.0+
+
+5.Node v10+
+
+6.Vue-cli 3.0+
+
+
+### 在使用该系统前，你还需要做如下准备
 
 1. 给 [idea (opens new window)](https://blog.csdn.net/wochunyang/article/details/81736354)或者 [eclipse (opens new window)](https://blog.csdn.net/magi1201/article/details/85995987)安装 lombok 插件，我们用它可以省略get，set 方法，可以使代码更简洁， 具体查看[ lombok教程(opens new window)](https://www.cnblogs.com/guodong-wang/p/8333888.html)
 2. 了解MapStruct，项目用到了它的映射实体，如果你不熟悉可以查看：[熟悉MapStruct(opens new window)](https://www.jianshu.com/p/3f20ca1a93b0)
@@ -34,7 +30,7 @@
 
 ####  1.用git克隆后端项目到本地
 
-后端git地址：https://github.com/shiwei-Ren/smpe-admin
+后端git地址：`https://github.com/sanyueruanjian/smpe-admin`
 
 <img :src="$withBase('/img/image1.png')" alt="foo">
 
@@ -99,7 +95,7 @@
 
 <img :src="$withBase('/img/image8.png')" alt="foo">
 
-​		出现Started AppRun in 6.047 seconds (JVM running for 6.869)，代表启动成功
+​		出现`Started AppRun in 6.047 seconds (JVM running for 6.869)`，代表启动成功
 
 <img :src="$withBase('/img/image9.png')" alt="foo">
 
@@ -109,7 +105,7 @@
 
 #### **1. 用git克隆前端项目到本地**
 
-前端git地址：https://github.com/shiwei-Ren/smpe-admin-web
+前端git地址：`https://github.com/sanyueruanjian/smpe-admin-web`
 
 <img :src="$withBase('/img/image10.png')" alt="foo">
 
@@ -119,15 +115,15 @@
 
 2. 安装依赖
 
-   2.1. 建议使用npm安装依赖，使用cnpm安装会出现奇怪的问题，可以用registry指向淘宝镜像解决npm下载速度慢
+   2.1. 建议使用`npm`安装依赖，使用`cnpm`安装会 出现奇怪的问题，可以用`registry`指向淘宝镜像解决`npm`下载速度慢
 
 <img :src="$withBase('/img/image11.png')" alt="foo">
 
-#### **3. 安装依赖完成后，启动前端项目：npm run dev**
+#### 3. 安装依赖完成后，启动前端项目：`npm run dev` 
 
 <img :src="$withBase('/img/image12.png')" alt="foo">
 
-#### 4.打开浏览器，输入：(http://localhost:8013)
+#### 4.打开浏览器，输入：`(http://localhost:8013)`
 
 ```xml
  账号密码：admin/123456 

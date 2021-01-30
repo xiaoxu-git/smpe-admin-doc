@@ -16,7 +16,7 @@
 
 ### **权限方法及注解**
 
-在SpringSecurity安全框架中，提供了一些方法和注解来帮助我们进行权限判断和数据过滤
+在`SpringSecurity`安全框架中，提供了一些方法和注解来帮助我们进行权限判断和数据过滤
 
 | **表达式**                             | **描述**                                                     |
 | -------------------------------------- | ------------------------------------------------------------ |
@@ -30,7 +30,7 @@
 | @PostFilter                            | 对返回的数据进行过滤                                         |
 | @PreFilter                             | 对传入的数据进行过滤                                         |
 
-下面的接口表示用户拥有user:del权限就能能访问delete方法， 如果方法不加@preAuthorize注解，意味着所有用户都需要带上有效的token 后才能访问delete 
+下面的接口表示用户拥有`user:del`权限就能能访问`delete`方法， 如果方法不加`@preAuthorize`注解，意味着所有用户都需要带上有效的`token` 后才能访问`delete `
 
 ```java
  @ApiOperation("删除用户")
@@ -53,7 +53,7 @@
     }
 ```
 
-**check()** 方法表示如果该身份是admin的话，直接返回true，不再进行多余判断。如果不是admin的话，将用户的所有身份进行判断，看是否有匹配的身份，若有返会true，无则返回false
+`check()` 方法表示如果该身份是admin的话，直接返回true，不再进行多余判断。如果不是admin的话，将用户的所有身份进行判断，看是否有匹配的身份，若有返会true，无则返回false
 
 ```java
 @Service(value="smpe")
@@ -82,9 +82,9 @@ returnsmpePermissions.contains("admin") ||Arrays.stream(permissions).anyMatch(sm
 
 1、使用注解方式
 
-只需要在Controller的方法上加入该注解即可
+只需要在`Controller`的方法上加入该注解即可`@AnonymousAccess`
 
-@AnonymousAccess2、修改配置文件方式
+2、修改配置文件方式
 
 smpe-system -> modules -> security -> config -> SecurityConfig
 
@@ -194,31 +194,195 @@ returncurrentLevel<=optLevel;
 
 ## **系统缓存**
 
-缓存我们使用的是Redis，默认使用Spring的注解对系统缓存进行操作。
+本系统缓存运用springboot切面编程的思想与java反射原理开发了新的注解`@Query`与`@Queries`，通过新注解`@Query`与`@Queries`实现了原先`@One`和`@Many`的效果，
 
-配置文件位于**smpe-common**模块下的**marchsoft\config\RedisConfig.java**目录。
+#### 单一实体缓存，key和value都仅与该实体相关(1:1)
 
-同时我们提供了redis常用的工具类,位于**smpe-common**模块下的**marchsoft\utils\RedisUtils.java**目录。
+- 首先是针对一个实体的单条信息进行缓存，key和value都和一个实体有关。如缓存job表的每一条记录，以id和键名，Job实体为value存入缓存：
 
-### **缓存注解**
+  ```java
+  在JobMapper加上命名空间 @CacheConfig(cacheNames = "job")
+  ```
 
-```
-@CacheConfig：主要用于配置该类中会用到的一些共用的缓存配置
-@Cacheable：主要方法的返回值将被加入缓存。在查询时，会先从缓存中获取，若不存在才再发起对数据库的访问                       
-@CachePut：主要用于数据新增和修改操作  
-@CacheEvict：配置于函数上，通常用在删除方法上，用来从缓存中移除相应数据
-```
-
-使用方法：
+- 首先在JobMapper加上命名空间：
 
 ```java
-@Service
-@RequiredArgsConstructor
-@CacheConfig(cacheNames = "menu")
-@Slf4j
-public class MenuServiceImpl extends BasicServiceImpl<MenuMapper, Menu> implements IMenuService {
+@CacheConfig(cacheNames = "job")
+public interface JobMapper extends BasicMapper<Job> {
+```
+
+- 虽然`BaseMapper`已经提供了根据id查询——` T selectById(Serializable id);`
+
+  **重写selectById，并加上@Cacheable**
+
+- 但是咱们需要加上缓存，所以需要重新在`mappe`r层写该方法（无需写sql），并加上`@Cacheable`，此时键名key的命名规则为统一的 `"'id:' + #p0"` ，id指Job的id，#p0指方法的第一个参数：
+
+```java
+@Cacheable(key = "'id:' + #p0")
+Job selectById(Long id);
+```
+
+- 此时`springboot`会将第一查询的结果放入缓存，之后无论是从`service`调`mapper`的该方法，还是从`mapper`的`@Query`中调用该方法都可以走缓存。
+
+- 缓存情况如下图：
+
+
+  <img :src="$withBase('/img/image27.png')" alt="foo">
+
+  **将键名除id外以静态变量存入CacheKey**
+
+- 可以看到我们成功把id为1的job存入了`redis`缓存，该缓存的value即为Job实体类，键名为 job::id:1 ，其中为了后期维护缓存方便，我们将字符串 "job::id:" 作为静态变量存入` CacheKey.class`中，在做维护时只需拼接一个id即可：
+
+```java
+public interface CacheKey {
+    /**
+     * 用户
+     */
+    String USER_ID = "user::id:";
+    /**
+     * 数据
+     */
+    String DATA_USER = "data::user:";
+    /**
+     * 菜单
+     */
+    String MENU_ID = "menu::id:";
+    String MENU_USER = "menu::user:";
+    String MENU_ROLE = "menu::role:";
+    /**
+     * 角色授权
+     */
+    String ROLE_AUTH = "role::auth:";
+    String ROLE_USER = "role::user:";
+    /**
+     * 角色信息
+     */
+    String ROLE_ID = "role::id:";
+    /**
+     * 部门信息
+     */
+    String DEPT_ID = "dept::id:";
+    String DEPT_ROLE = "dept::role:";
+    /**
+     * 岗位信息
+     */
+    String JOB_ID = "job::id:";      //示例
+    String JOB_USER = "job::user:";
 }
 ```
+
+在对应的`service`层手动维护缓存
+
+- 这里为了统一建议手动维护缓存，即在`JobServiceImpl`下手写一个方法来清理缓存，在相应的更新、删除Job的地方调用该方法即可：
+
+```java
+    /**
+     * 清理缓存
+     * @param id job_id
+     */
+private void delCaches(Long id){
+    redisUtils.del(CacheKey.JOB_ID + id);
+}
+```
+
+- 你也可以在相应的更新、删除的方法上加上springboot删除缓存的注解（不推荐，后期缓存情况复杂）
+
+```java
+@CacheEvict(key = "'id:' + #p0.id")
+public void update(Job resources) {}
+```
+
+**对于单一实体的缓存，仅缓存 selectById方法，对于该实体的分页查询等其他条件查询一般不做缓存，除非有特殊要求**
+
+#### 缓存内容关联两个及以上的实体（1:n,n:m）
+
+- `@Query`中所调用的方法必须要有缓存，这里user与job是多对多的关系，有一张中间sys_users_jobs，当我们在查询一个用户时要连带将其所有的岗位也查找出来：
+
+```java
+//UserMapper中查询一个用户
+@Select("SELECT id,dept_id,username,nick_name,gender,phone,email,avatar_path,password," +
+            "is_admin,enabled,create_by,update_by,pwd_reset_time,create_time,update_time" +
+            " FROM sys_user u WHERE u.id = #{id} AND is_deleted=0")
+    @Results({
+            @Result(column = "id", property = "id"),
+            @Result(column = "dept_id", property = "deptId"),
+    })
+    @Queries({
+            @Query(column = "id", property = "roles",
+                    select = "marchsoft.modules.system.mapper.RoleMapper.findWithMenuByUserId"),
+            @Query(column = "id", property = "jobs",
+                    select = "marchsoft.modules.system.mapper.JobMapper.findByUserId"),  //这里
+            @Query(column = "dept_id", property = "dept",
+                    select = "marchsoft.modules.system.mapper.DeptMapper.selectById")
+    })
+    @Cacheable(key = "'id:' + #p0")
+    UserBO findUserDetailById(Long id);
+```
+
+- 既然通过`@Query`调用了`JobMapper.findByUserId`方法，我们就需要对其加缓存（其他的同理）
+
+```java
+//JobMapper中根据用户id查询岗位
+@Select("SELECT j.id, j.name, j.enabled, j.job_sort, j.create_by, j.update_by, j.create_time, j.update_time " +
+            "FROM sys_job j, sys_users_jobs uj WHERE j.id = uj.job_id AND uj.user_id = ${id} AND j.is_deleted=0")
+@Cacheable(key = "'user:' + #p0")
+Set<Job> findByUserId(Long id);
+```
+
+- 此时缓存的命名规则为 key = "'user:' + #p0" ，这里的user指user_id的意思，后面的参数#p0就是user_id，我们可以发现此时的redis里缓存全称为： `job::user:2`
+
+  <img :src="$withBase('/img/image29.png')" alt="foo">
+
+
+- 意思即为user_id为2的用户所拥有的job，从value中可以看出该用户有两个job。我们也需要将 "job::user:" 存入 CacheKey中，命名为 JOB_USER （可以回看上面的）。
+
+  **从每个与该缓存相关的实体的service层对其进行维护**
+
+- 以 job::user:2 缓存维护为例
+
+  **Job发生删改时，可能需要对改缓存进行维护**
+
+- 当我们修改了一个id为1的job，可能id为2的user有这个job，也可能没有，有的话必须删除该缓存，即我们需要通过sys_users_jobs关系表找到含有job_id=2的user_id的集合，是一个List：
+
+```java
+//UserMapper下
+//根据job_id查询用户Id (清理job缓存时调用)
+@Select("SELECT user_id FROM sys_users_jobs WHERE job_id = #{id} group by user_id")
+List<Long> findByJobId(Long id);
+```
+
+- 注意，这里是因为job的变动导致需要清理该缓存，所以该部分清理缓存的代码写在 JobServiceImpl下的`delcache`方法中:
+
+  ```java
+  //JobServiceImpl
+  private void delCaches(Long id){
+      List<Long> userIds = userMapper.findByJobId(id);
+      redisUtils.delByKeys(CacheKey.JOB_USER, new HashSet<>(userIds)); //第二种情况所删的缓存
+      redisUtils.del(CacheKey.JOB_ID + id);   //第一种情况所删的缓存
+  }
+  ```
+
+  当中间表sys_users_jobs发生变动时，一定要清理缓存！
+
+  - 当我们修改了user的job时，如上图user_id = 2的用户有两个job，我们将其调整为一个job，此时也需要删除 job::user:2 这条缓存，由于是因为更新了user才导致删除这条缓存，所以该部分代码写在 `UserServiceImpl`的更新、删除中:
+
+    ```java
+    //UserServiceImpl下的更新user方法
+    public void updateUserWithDetail(UserInsertOrUpdateDTO userInsertOrUpdateDTO) {
+    //...
+    //如果岗位发生变化
+       if (! CollectionUtils.isEqualCollection(jobIds, userInsertOrUpdateDTO.getJobs())) {
+          //...
+          //清除缓存
+          redisUtils.del(CacheKey.JOB_USER + userInsertOrUpdateDTO.getId());
+       }
+    //...
+    }
+    ```
+
+    - 这样，我们才算是对 job::user:2这条缓存做了完全的维护。
+
+      对于情况一的缓存只涉及一个实体（表），缓存维护比较好实现，针对第二种情况需要我们考虑全面，在哪些地方需要去维护，这个需要考虑清除，不要随意加缓存
 
 
 
@@ -232,104 +396,99 @@ public class MenuServiceImpl extends BasicServiceImpl<MenuMapper, Menu> implemen
 
 ### **自定义异常**
 
-1. 通用异常
+通用异常
 
-   1. 封装了BadRequestException作为通用的异常处理	
+   封装了`BadRequestException`作为通用的异常处理
 
-      1. 
 
-         ```java
-         @Getter
-         public class BadRequestException extends RuntimeException {
+```java
+@Getter
+public class BadRequestException extends RuntimeException {
+
+private Integer status = BAD_REQUEST.value();
+
+public BadRequestException(String msg) {
+super(msg);
+    }
+
+public BadRequestException(Integer status, String msg) {
+super(msg);
+this.status = status;
+    }
+
+public BadRequestException(ResultEnum resultEnum) {
+super(resultEnum.getMsg());
+this.status = resultEnum.getCode();
+    }
+
+}
+```
+
          
-         private Integer status = BAD_REQUEST.value();
-         
-         public BadRequestException(String msg) {
-         super(msg);
-             }
-         
-         public BadRequestException(Integer status, String msg) {
-         super(msg);
-         this.status = status;
-             }
-         
-         public BadRequestException(ResultEnum resultEnum) {
-         super(resultEnum.getMsg());
-         this.status = resultEnum.getCode();
-             }
-         
-         }
-         ```
 
-         
+处理自定义异常(在全局异常处理中：`src/main/java/marchsoft/exception/handler/GlobalExceptionHandler.java`)
 
-   2. 处理自定义异常(在全局异常处理中：src/main/java/marchsoft/exception/handler/GlobalExceptionHandler.java)
+```java
+/**
+* 功能描述：处理自定义异常
+*
+* @param e 自定义异常
+* @return restful风格的异常信息
+* @author RenShiWei
+* Date: 2020/4/13 22:18
+*/
+@ExceptionHandler(value = BadRequestException.class)
+public ResponseEntity<Result<String>> badRequestException(BadRequestException e) {
+log.error(e.getMessage(), e);
+//默认到后端的请求，状态码都为200，自定义的异常由封装的code去控制
+return ResponseEntity.status(HttpStatus.OK).body(Result.error(e.getMessage()));
+}
+```
 
-      1. 
+其他异常的处理
 
-         ```java
-         /**
-          * 功能描述：处理自定义异常
-          *
-          * @param e 自定义异常
-          * @return restful风格的异常信息
-          * @author RenShiWei
-          * Date: 2020/4/13 22:18
-          */
-         @ExceptionHandler(value = BadRequestException.class)
-         public ResponseEntity<Result<String>> badRequestException(BadRequestException e) {
-         log.error(e.getMessage(), e);
-         //默认到后端的请求，状态码都为200，自定义的异常由封装的code去控制
-             return ResponseEntity.status(HttpStatus.OK).body(Result.error(e.getMessage()));
-         }
-         ```
+权限不足异常 
 
-2. 其他异常的处理
+```java
+/**
+* description: security的角色权限不足异常
+*
+* @param e 权限不足异常
+* @return 200状态码 403自定义code
+* @author RenShiWei
+* Date: 2020/8/7 19:52
+*/
+@ExceptionHandler(AccessDeniedException.class)
+public ResponseEntity<Result<String>> handleAccessDeniedException(AccessDeniedException e) {
+log.error(e.getMessage(), e);
+return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(ResultEnum.IDENTITY_NOT_POW.getCode(),
+            ResultEnum.IDENTITY_NOT_POW.getMsg()));
+}
+```
 
-   1. 权限不足异常
+不可知异常处理 
 
-      1. 
+```java
+/**
+* 功能描述：处理所有不可知的异常
+* @param e 异常 Throwable(异常的根类)
+* @return 异常对象信息
+* @author RenShiWei
+* Date: 2020/7/10 10:54
+*/
+@ExceptionHandler(Throwable.class)
+public ResponseEntity<Result<String>> handleException(Throwable e) {
+// 打印堆栈信息
+    log.error(e.getMessage(), e);
+return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultEnum.SEVER_ERROR.getCode(), ResultEnum.SEVER_ERROR.getMsg()));
+}
+```
 
-         ```java
-         /**
-          * description: security的角色权限不足异常
-          *
-          * @param e 权限不足异常
-          * @return 200状态码 403自定义code
-          * @author RenShiWei
-          * Date: 2020/8/7 19:52
-          */
-         @ExceptionHandler(AccessDeniedException.class)
-         public ResponseEntity<Result<String>> handleAccessDeniedException(AccessDeniedException e) {
-         log.error(e.getMessage(), e);
-         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(ResultEnum.IDENTITY_NOT_POW.getCode(),
-                     ResultEnum.IDENTITY_NOT_POW.getMsg()));
-         }
-         ```
 
-   2. 不可知异常处理
+其他异常处理
 
-      1. 
+详情请见：`src/main/java/marchsoft/exception/handler/GlobalExceptionHandler.java`
 
-         ```java
-         /**
-          * 功能描述：处理所有不可知的异常
-          * @param e 异常 Throwable(异常的根类)
-          * @return 异常对象信息
-          * @author RenShiWei
-          * Date: 2020/7/10 10:54
-          */
-         @ExceptionHandler(Throwable.class)
-         public ResponseEntity<Result<String>> handleException(Throwable e) {
-         // 打印堆栈信息
-             log.error(e.getMessage(), e);
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultEnum.SEVER_ERROR.getCode(), ResultEnum.SEVER_ERROR.getMsg()));
-         }
-         ```
-
-   3. 其他异常处理
-
-      1. 详情	请见：`src/main/java/marchsoft/exception/handler/GlobalExceptionHandler.java`
 
 ```java
 // 通用异常
@@ -339,78 +498,14 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 ```
 
 
-
-## **代码生成**
-
-代码生成是在smpt-system包下完成的，目录如下：
-
-<img :src="$withBase('/img/image19.png')" alt="foo">
-
-**进行MybatisPlus代码生成的模板配置**
-
-这里使用了自定义模板引擎（freemarker），这样才方便我们进行深度定制。（当然也可以使用官方的默认配置）。
-
-模板引擎文件放置目录：
-
-<img :src="$withBase('/img/image20.png')" alt="foo">
-
-### **步骤一：确定代码生成位置及作者信息**
-
-#### **1.1是否在项目根目录下生成代码（y为是，n为否）。多模块开发，要在子模块下生成代码请输入n**
-
-如果不是多模块开发，或者想要在根父工程生成代码，直接输入y。
-
-如果想要在子模块生成代码，输入n。
-
-#### **1.2在项目指定模块下生成代码，请输入模块名**
-
-如果上一步输入n，则在这一步输入想要生成代码的子模块名。（上一步输入y，则跳过这一步）
-
-#### **1.3作者名（方便生成注解及作者相关）**
-
-#### **1.4代码生成的父级包名称（全路径）**
-
-从模块/项目下的根包（Java的包）开始，以"."进行分级。
-
-例如：`marchsoft.test2`
-
-#### **1.5生成在父级包下的指定子包名称（输入n代表直接在父级包下生成）**
-
-如果还想在子包下生成，直接输入子包的名称；如果没有子包，即在上一步父包下生成，直接输入n。
-
-### **步骤二：确定以哪些数据库的表进行代码生成**
-
-#### **2.1是否选择所有数据库的表（请输入y/n）**
-
-输入y将连接的目标数据库的所有表全部进行代码生成；输入n执行接下来选择表生成代码的策略。
-
-#### **2.2为输入生成数据库的表，n为输入排除数据库的表**
-
-输入y代表采用选择数据库表的代码生成策略；输入n代表采用选择排除数据表的代码生成。
-
-#### **2.3请输入生成或者排除数据库表的名称，多个用英文状态下的’,'分割**
-
-输入表名后，按照相应的策略进行代码生成
-
-### **参考**
-
-我们在Mybatis-Plus代码生成器的基础上，进行了相应的配置。
-
-使用及配置详情请参考：[自定义深度定制人性化的MyBatis-Plus的代码生成策略](https://blog.csdn.net/qq_42937522/article/details/110725251)
-
 ## **数据权限**
 
 本系统是基于部门做的一个简单数据权限控制，也就是通过用户角色中的数据权限控制用户能看哪些数据。
 
 ### **注解方式**
 
-现可通过注解 
-
-```java
-@DataPermission
-```
-
- 进行权限控制
+现可通过注解`@DataPermission ` 进行权限控制
+ 
 
 ### **数据权限**
 
@@ -428,7 +523,7 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 
 框架对定时任务做了整合
 
-对于简单的定时任务可以只使用spring 的@sechduled 注解
+对于简单的定时任务可以只使用spring 的`@sechduled` 注解
 
 对于动态管理动态任务，涉及到定时任务的增删改，以及数据库持久化储存，本框架整合了quartz，可通过后台管理页面对定时任务进行增删改查操作，
 
@@ -436,7 +531,7 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 
 
 
-本模块的源码在 smpe-system\src\main\java\marchsoft\modules\quartz
+本模块的源码在 `smpe-system\src\main\java\marchsoft\modules\quartz`
 
 
 
@@ -460,10 +555,10 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 
 - 任务名称：当前任务的名称，可以自定义
 - 任务描述：对该任务的描述
-- bean名称： 定时任务通过bean名称来获取具体执行的bean对象。需要执行的定时任务类，必须注入spring容器中。
+- `bean`名称： 定时任务通过`bean`名称来获取具体执行的`bean`对象。需要执行的定时任务类，必须注入`spring`容器中。
 - 执行方法：  需要执行的方法名称，底层是通过反射执行方法。
-- cron表达式：定时任务通过cron表达式控制任务执行的时间，具体内容可以查询官方cron表达式介绍
-- 子任务id：子任务可以是当前已经定义过的任务的id，传入时需要用多个逗号隔开，当主任务执行后，子任务后按顺序依次执行。
+- `cron`表达式：定时任务通过`cron`表达式控制任务执行的时间，具体内容可以查询官方`cron`表达式介绍
+- 子任务`id`：子任务可以是当前已经定义过的任务的`id`，传入时需要用多个逗号隔开，当主任务执行后，子任务后按顺序依次执行。
 - 任务负责人：该任务的负责人
 - 告警邮箱：定时任务执行失败时会将失败信息通过邮箱发送给用户。如果有多个邮箱可以用逗号隔开，如果不需要则不用填。（该功能暂不支持）
 - 失败后暂停：选择定时任务失败后是否暂停当前定时任务。
@@ -474,8 +569,16 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 
 
 
-<img :src="$withBase('/img/image25.png')" alt="foo">
+```java
+@Slf4j
+@Component
+public class TestTask {
 
+    public void run1(String str){
+        log.info("run1 执行成功，参数为：" + str);
+    }
+}
+```
 
 
 <img :src="$withBase('/img/image26.png')" alt="foo">
@@ -486,13 +589,13 @@ throw new BadRequestException(HttpStatus.OK, "发送了异常");
 
 ### **原理解释**
 
-本框架使用的是spring quartz框架，详细解释可以参考博客[](https://blog.csdn.net/qq_45473439/article/details/113357101)
+本框架使用的是`spring quartz`框架，详细解释可以参考博客['原理'](https://blog.csdn.net/qq_45473439/article/details/113357101)
 
-关于quartz框架的持久化操作，详情可以看本模块的源码 smpe-system\src\main\java\marchsoft\modules\quartz
+关于`quartz`框架的持久化操作，详情可以看本模块的源码 `smpe-system\src\main\java\marchsoft\modules\quartz`
 
 ## **异步线程池**
 
-代码地址：smpe-common\src\main\java\marchsoft\config\bean\AsyncTaskProperties.java
+代码地址：`smpe-common\src\main\java\marchsoft\config\bean\AsyncTaskProperties.java`
 
 源码如下：
 
@@ -562,15 +665,15 @@ return executor;
 
 使用方式如下
 
-```
-使用@EnableAsync来开启异步的支持，使用@Async来对某个方法进行异步执行。
-```
+
+使用`@EnableAsync`来开启异步的支持，使用`@Async`来对某个方法进行异步执行。
+
 
 
 
 ## **线程池工具**
 
-代码地址：smpe-common\src\main\java\marchsoft\utils\ThreadPoolExecutorUtil.java
+代码地址：`smpe-common\src\main\java\marchsoft\utils\ThreadPoolExecutorUtil.java`
 
 源码如下：
 
@@ -605,105 +708,69 @@ privatefinalstaticThreadPoolExecutor executor =ThreadPoolExecutorUtil.getPoll();
 
 ## **分页实现**
 
-- 后端实现分页：本项目在smpe-common模块utils包下的PageUtil中封装了适用于多种情况的分页查询。
-  - 例如：
+自定义分页信息默认值，默认当前页是1，每页显示10条数据。
+
+代码地址：`smpe-common\src\main\java\marchsoft.base.PageVO`
+
+​源码如下：
 
 ```java
 /**
- * description:根据分页条件构建分页查询IPage
- *
- * @param current       当前页
- * @param size          当前页条数
- * @param orderItemList 排序规则集合
- * @return IPage查询条件
- * @author RenShiWei
- * Date: 2020/11/22 17:19
- */
-public static <K> IPage<K> buildPage(int current, int size, List<OrderItem> orderItemList) {
-    Page<K> page = new Page<>(current, size);
-    page.addOrder(orderItemList);
-    return page;
-}
+     * 获取排序信息，排序的字段和正反序
+     */
+    @ApiModelProperty(value = "排序方式。(默认【创建时间倒序】:[{'column': 'create_time','asc': false}])。",
+            notes = "例子：[{'column': 'create_time','asc': false},{'column':'name','asc': true}]"
+    )
+    private String orders;
+
+    /**
+     * 当前页默认值为1
+     */
+    public Integer getCurrent() {
+        return current = (current == null || current <= 0) ? 1 : current;
+    }
+
+    /**
+     * 每页大小默认为10
+     */
+    public Integer getSize() {
+        return size = (size == null || size == 0) ? 10 : size;
+    }
+
+    /**
+     * description:将orders（json数组字符串）转为List
+     */
+    public List<OrderItem> generateOrderList() {
+        List<OrderItem> orderItemList = new ArrayList<>();
+        if (StrUtil.isBlank(getOrders())) {
+            orderItemList.add(OrderItem.desc("create_time"));
+        } else {
+            try {
+                orderItemList = JSONArray.parseArray(orders, OrderItem.class);
+            } catch (Exception e) {
+                throw new BadRequestException("分页排序参数orders不合法，请传正确的参数格式——['column':'','asc':'true/false']");
+            }
+        }
+        return orderItemList;
+    }
+
+    /**
+     * description:根据pageVO构建分页查询IPage
+     */
+    public <K> IPage<K> buildPage() {
+        Page<K> page = new Page<>(getCurrent(), getSize());
+        page.addOrder(generateOrderList());
+        return page;
+    }
 ```
 
+具体分页业务处理请参考项目 ` smpe-common\src\main\java\marchsoft.utils.PageUtil`
 
 
-常见坑点1：`selectPostById`
+## **自定义后端代码生成**
 
-莫名其妙的分页。例如下面这段代码
+关于代码生成类MyBatis-Plus**Generator**的使用参考：[自定义深度定制人性化的MyBatis-Plus的代码生成策略](https://blog.csdn.net/qq_42937522/article/details/110725251)
 
-```java
-startPage();
-List<User> list;
-if(user !=null){ 
-    list = userService.selectUserList(user);
-}else{
-     list =newArrayList<User>();
-}
-Post post = postService.selectPostById(1L);
-returngetDataTable(list);
-```
+## **自定义扩展MyBatis-Plus**
 
-
-
-原因分析：这种情况下由于' user ' 存在' null ' 的情况，就会导致 ' pageHelper '生产了一个分页参数，但是没有被消费，这个参数就会一直保留在这个线程上。 当这个线程再次被使用时，就可能导致不该分页的方法去消费这个分页参数，这就产生了莫名其妙的分页。
-
-上面这个代码，应该写成下面这个样子才能保证安全。
-
-```java
-List<User> list;
-if(user !=null){
-    startPage(); 	
-    list = userService.selectUserList(user);
-}else{ 	
-    list =newArrayList<User>();
-}
-Post post = postService.selectPostById(1L);
-returngetDataTable(list);
-```
-
-
-
-常见坑点2：添加了  ’ startPage ’方法。也没有正常分页。例如下面这段代码
-
-```java
-startPage();
-Post post = postService.selectPostById(1L);
-List<User> list = userService.selectUserList(user);
-return getDataTable(list);
-```
-
-
-
-原因分析：只对该语句以后的第一个查询 （Select）语句得到的数据进行分页。
-
-上面这个代码，应该写成下面这个样子才能正常分页。
-
-```java
-Post post = postService.selectPostById(1L);
-startPage();
-List<User> list = userService.selectUserList(user);
-returngetDataTable(list);
-```
-
-   注意
-
-如果改为其他数据库需修改配置 '  application-dev.yml '文件中的属性
-
-```
-url:你的数据库
-username: 用户名
-password: 密码
-```
-
-
-
-## **部署项目todo**
-
-参考：
-
-1. [docker安装及docker常用命令](https://blog.csdn.net/qq_42937522/article/details/106274293)
-2. [docker 构建git+maven+jdk8的centos7环境，实现轻量级的springboot项目的自动化部署](https://blog.csdn.net/qq_42937522/article/details/107755941)
-3. [docker安装nginx规范所有项目的反向代理(一个项目一个反向代理的conf配置文件)](https://blog.csdn.net/qq_42937522/article/details/108179441)
-4. [docker 构建centos7+git+nvm镜像，实现自主切换node版本统一部署前端vue项目](https://blog.csdn.net/qq_42937522/article/details/108702775)
-
+参考：[如何深度定制扩展MyBatis-Plus提供的Model、Mapper、Service层的方法](https://blog.csdn.net/qq_42937522/article/details/110740545)

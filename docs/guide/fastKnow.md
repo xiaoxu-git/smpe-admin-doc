@@ -6,7 +6,7 @@
 - 支持接口级别的功能权限与数据权限，可自定义操作
 - 自定义权限注解与匿名接口注解，可快速对接口拦截与放行
 - 前后端统一异常拦截处理，统一输出异常，避免繁琐的判断
-- 自定义扩展Mybatis-Plus的功能                 
+- 自定义扩展`Mybatis-Plus`的功能                 
 - 高效率开发，代码生成器可一键生成前后端代码                      
 - 完善的日志记录体系简单注解即可实现                                                                                        
 
@@ -14,17 +14,16 @@
 
 ### **系统管理**
 
-- 用户管理：提供用户的相关配置，新增用户后，默认密码为123456
+- 用户管理：提供用户的相关配置，新增用户后，默认密码为`123456`
 - 角色管理：对权限与菜单进行分配，可根据部门设置角色的数据权限
 - 菜单管理：已实现菜单动态路由，后端可配置化，支持多级菜单
 - 部门管理：可配置系统组织架构，树形表格展示
 - 岗位管理：配置各个部门的职位
 - 任务调度：管理定时任务
-- 字典管理：待开发
 
 ### **系统监控**
 
-- 在线用户：记录登陆系统的用户
+- 在线用户：监控用户在线的信息，及时反映用户是否在线
 - 操作日志：记录用户的操作情况
 - 异常日志：记录用户的异常操作情况
 
@@ -34,17 +33,17 @@
 
 **Axios**：[Axios](http://axios-js.com/)
 
-**Vue**:[Vue](https://vuejs.bootcss.com/guide/)
+**Vue**：[Vue](https://vuejs.bootcss.com/guide/)
 
-Element-ui:[Element-ui](https://element.eleme.cn/#/zh-CN)
+Element-ui：[Element-ui](https://element.eleme.cn/#/zh-CN)
 
 ### **后端技术**
 
-**Spring** Security:[Spring Security](https://spring.io/projects/spring-security)
+**Spring** Security：[Spring Security](https://spring.io/projects/spring-security)
 
-**Mybatis**-Plus :[Mybatis-Plus](https://baomidou.com/)
+**Mybatis**-Plus：[Mybatis-Plus](https://baomidou.com/)
 
-**Redis**:[Redis](http://www.redis.cn/)
+**Redis**：[Redis](http://www.redis.cn/)
 
 **HuTool**：[HuTool官方文档](https://hutool.cn/docs/#/)。
 
@@ -60,7 +59,7 @@ Element-ui:[Element-ui](https://element.eleme.cn/#/zh-CN)
 
 ### **后端项目结构**
 
-```xml
+```text
 - smpe-common 公共模块
     - annotation 为系统自定义注解
     - aspect 自定义注解的切面
@@ -108,7 +107,7 @@ Element-ui:[Element-ui](https://element.eleme.cn/#/zh-CN)
 
 ###    **前端项目结构**
 
-```xml
+```text
 |-- public         存放静态资源，存放在该文件夹的东西不会被打包影响，而是会原封不动的输出到dist文件夹中
     |-- favicon.ico   网站图标
     |-- index.html     主页，项目入口
