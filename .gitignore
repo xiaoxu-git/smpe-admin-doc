@@ -1,2 +1,9 @@
 .DS_StoreThumbs.dbdb.json*.lognode_modules/sources/.vuepress/dist/*.bat*.sh
 /node_modules
+# /docs
+# !/docs/.vuepress/dist
+# deploy.sh
+# package.json
+# package-lock.json
+# yarn.lock
+# yarn-error.log
